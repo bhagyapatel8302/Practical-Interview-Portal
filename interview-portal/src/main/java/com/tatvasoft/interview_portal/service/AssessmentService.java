@@ -1,0 +1,19 @@
+package com.tatvasoft.interview_portal.service;
+
+import com.tatvasoft.interview_portal.dto.AssessmentRequest;
+import com.tatvasoft.interview_portal.dto.AssessmentResponse;
+
+import java.util.List;
+
+public interface AssessmentService {
+
+    AssessmentResponse create(AssessmentRequest request);
+
+    List<AssessmentResponse> getAll();
+
+    AssessmentResponse getById(Long id);
+
+    AssessmentResponse update(Long id, AssessmentRequest request);
+
+    void delete(Long id);
+}
