@@ -29,7 +29,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
 
         try {
-            User user = userService.login(request.getEmail(), request.getPassword());
+            User user = userService.login(request.getUsername(), request.getPassword());
 
             String accessToken = jwtUtil.generateAccessToken(user);
             String refreshToken = jwtUtil.generateRefreshToken(user);
@@ -57,23 +57,6 @@ public class AuthController {
             return ResponseEntity.status(401).body(response);
         }
     }
-//    @PostMapping("/login")
-//    public String login(@RequestParam String username,
-//                        @RequestParam String password) {
-//
-//        if ("admin".equals(username) && "admin123".equals(password)) {
-//
-//            String accessToken = jwtUtil.generateAccessToken(username);
-//            String refreshToken = jwtUtil.generateRefreshToken(username);
-//
-//            return Map.of(
-//                    "accessToken", accessToken,
-//                    "refreshToken", refreshToken
-//            ).toString();
-//        }
-//
-//        throw new RuntimeException("Invalid credentials");
-//    }
 
     @PostMapping("/refresh")
     public Map<String, String> refresh(@RequestParam String refreshToken) {
