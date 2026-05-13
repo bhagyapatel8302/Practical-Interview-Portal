@@ -31,6 +31,19 @@ public class AuthController {
         try {
             User user = userService.login(request.getUsername(), request.getPassword());
 
+            // check active user
+            if (!Boolean.TRUE.equals(user.getIsActive())) {
+
+                ApiResponse<LoginResponse> response = new ApiResponse<>(
+                        401,
+                        false,
+                        List.of("User account is inactive"),
+                        null
+                );
+
+                return ResponseEntity.status(401).body(response);
+            }
+
             String accessToken = jwtUtil.generateAccessToken(user);
             String refreshToken = jwtUtil.generateRefreshToken(user);
 
