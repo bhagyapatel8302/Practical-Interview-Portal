@@ -1,5 +1,6 @@
 package com.tatvasoft.interview_portal.util;
 
+import com.tatvasoft.interview_portal.entity.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,19 +19,33 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public String generateAccessToken(String username) {
+    public String generateAccessToken(User user) {
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(user.getUsername())
+
+                .claim("UserId", user.getId())
+                .claim("RoleId", user.getRole().getId())
+                .claim("Name", user.getUsername())
+                .claim("LoginTimeStamp", String.valueOf(System.currentTimeMillis()))
+                .claim("IsAdmin", user.getRole().getRoleName().equalsIgnoreCase("admin"))
+                .claim("IsInterviewer", user.getRole().getRoleName().equalsIgnoreCase("interviewer"))
+                .claim("RoleName", user.getRole().getRoleName())
                 .claim("type", "access")
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 ))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .signWith(getKey())
                 .compact();
     }
 
-    public String generateRefreshToken(String username) {
+    public String generateRefreshToken(User user) {
         return Jwts.builder()
-                .setSubject(username)
+                .claim("UserId", user.getId())
+                .claim("RoleId", user.getRole().getId())
+                .claim("Name", user.getUsername())
+                .claim("LoginTimeStamp", String.valueOf(System.currentTimeMillis()))
+                .claim("IsAdmin", user.getRole().getRoleName().equalsIgnoreCase("admin"))
+                .claim("IsInterviewer", user.getRole().getRoleName().equalsIgnoreCase("interviewer"))
+                .claim("RoleName", user.getRole().getRoleName())
                 .claim("type", "refresh")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 1 day

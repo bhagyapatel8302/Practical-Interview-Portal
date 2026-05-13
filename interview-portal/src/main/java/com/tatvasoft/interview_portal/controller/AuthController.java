@@ -1,14 +1,20 @@
 package com.tatvasoft.interview_portal.controller;
 
+import com.tatvasoft.interview_portal.dto.ApiResponse;
+import com.tatvasoft.interview_portal.dto.LoginRequest;
+import com.tatvasoft.interview_portal.dto.LoginResponse;
 import com.tatvasoft.interview_portal.entity.User;
 import com.tatvasoft.interview_portal.service.UserService;
 import com.tatvasoft.interview_portal.util.JwtUtil;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
+@CrossOrigin(origins = "http://localhost:4200")
 public class AuthController {
 
     private final JwtUtil jwtUtil;
@@ -20,20 +26,37 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public Map<String, String> login(@RequestParam String username,
-                                     @RequestParam String password) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
 
-        User user = userService.login(username, password);
+        try {
+            User user = userService.login(request.getEmail(), request.getPassword());
 
-        String accessToken = jwtUtil.generateAccessToken(user.getUsername());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getUsername());
+            String accessToken = jwtUtil.generateAccessToken(user);
+            String refreshToken = jwtUtil.generateRefreshToken(user);
 
-        return Map.of(
-                "accessToken", accessToken,
-                "refreshToken", refreshToken
-        );
+            LoginResponse loginResponse = new LoginResponse(accessToken, refreshToken);
+
+            ApiResponse<LoginResponse> response = new ApiResponse<>(
+                    200,
+                    true,
+                    null,
+                    loginResponse
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception ex) {
+
+            ApiResponse<LoginResponse> response = new ApiResponse<>(
+                    401,
+                    false,
+                    List.of(ex.getMessage()),
+                    null
+            );
+
+            return ResponseEntity.status(401).body(response);
+        }
     }
-
 //    @PostMapping("/login")
 //    public String login(@RequestParam String username,
 //                        @RequestParam String password) {
@@ -67,7 +90,9 @@ public class AuthController {
 
         String username = jwtUtil.extractUsername(refreshToken);
 
-        String newAccessToken = jwtUtil.generateAccessToken(username);
+        User user = userService.getUserByUserName(username);
+
+        String newAccessToken = jwtUtil.generateAccessToken(user);
 
         return Map.of("accessToken", newAccessToken);
     }

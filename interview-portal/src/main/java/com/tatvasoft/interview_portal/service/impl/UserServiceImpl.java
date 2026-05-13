@@ -7,7 +7,6 @@ import com.tatvasoft.interview_portal.entity.User;
 import com.tatvasoft.interview_portal.repository.RoleRepository;
 import com.tatvasoft.interview_portal.repository.UserRepository;
 import com.tatvasoft.interview_portal.service.UserService;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -51,7 +50,7 @@ public class UserServiceImpl implements UserService {
                 saved.getUsername(),
                 saved.getEmail(),
                 saved.getRole().getId(),
-                saved.getIsActive().booleanValue()
+                saved.getIsActive()
         );
     }
 
@@ -79,8 +78,14 @@ public class UserServiceImpl implements UserService {
                 user.getUsername(),
                 user.getEmail(),
                 user.getRole().getId(),
-                user.getIsActive().booleanValue()
+                user.getIsActive()
         );
+    }
+
+    @Override
+    public User getUserByUserName(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     @Override
