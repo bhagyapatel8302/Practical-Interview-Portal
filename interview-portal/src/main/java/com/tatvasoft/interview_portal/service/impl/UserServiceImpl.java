@@ -4,6 +4,8 @@ import com.tatvasoft.interview_portal.dto.UserRequest;
 import com.tatvasoft.interview_portal.dto.UserResponse;
 import com.tatvasoft.interview_portal.entity.Role;
 import com.tatvasoft.interview_portal.entity.User;
+import com.tatvasoft.interview_portal.exception.ResourceNotFoundException;
+import com.tatvasoft.interview_portal.exception.UserAlreadyExistsException;
 import com.tatvasoft.interview_portal.repository.RoleRepository;
 import com.tatvasoft.interview_portal.repository.UserRepository;
 import com.tatvasoft.interview_portal.service.UserService;
@@ -30,11 +32,12 @@ public class UserServiceImpl implements UserService {
     public UserResponse createUser(UserRequest request) {
 
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new UserAlreadyExistsException("Username already exists");
         }
 
         Role role = roleRepository.findById(request.getRoleId())
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Role not found"));
 
         User user = new User();
         user.setUsername(request.getUsername());

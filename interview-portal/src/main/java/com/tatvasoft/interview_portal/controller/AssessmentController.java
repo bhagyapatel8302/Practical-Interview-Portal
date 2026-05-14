@@ -1,8 +1,10 @@
 package com.tatvasoft.interview_portal.controller;
 
+import com.tatvasoft.interview_portal.dto.ApiResponse;
 import com.tatvasoft.interview_portal.dto.AssessmentRequest;
 import com.tatvasoft.interview_portal.dto.AssessmentResponse;
 import com.tatvasoft.interview_portal.service.AssessmentService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,29 +20,74 @@ public class AssessmentController {
     }
 
     @PostMapping
-    public AssessmentResponse create(@RequestBody AssessmentRequest request) {
-        return service.create(request);
+    public ResponseEntity<ApiResponse<AssessmentResponse>> create(
+            @RequestBody AssessmentRequest request) {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        service.create(request)
+                )
+        );
     }
 
     @GetMapping
-    public List <AssessmentResponse> getAll() {
-        return service.getAll();
+    public ResponseEntity<ApiResponse<List<AssessmentResponse>>> getAll() {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        service.getAll()
+                )
+        );
     }
 
     @GetMapping("/{id}")
-    public AssessmentResponse get(@PathVariable Long id) {
-        return service.getById(id);
+    public ResponseEntity<ApiResponse<AssessmentResponse>> get(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        service.getById(id)
+                )
+        );
     }
 
     @PutMapping("/{id}")
-    public AssessmentResponse update(@PathVariable Long id,
-                                     @RequestBody AssessmentRequest request) {
-        return service.update(id, request);
+    public ResponseEntity<ApiResponse<AssessmentResponse>> update(
+            @PathVariable Long id,
+            @RequestBody AssessmentRequest request) {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        service.update(id, request)
+                )
+        );
     }
 
     @DeleteMapping("/{id}")
-    public String delete(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<String>> delete(
+            @PathVariable Long id) {
+
         service.delete(id);
-        return "Assessment deactivated";
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        "Assessment deactivated"
+                )
+        );
     }
 }

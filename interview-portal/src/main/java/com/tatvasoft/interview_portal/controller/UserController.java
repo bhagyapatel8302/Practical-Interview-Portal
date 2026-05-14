@@ -1,8 +1,8 @@
 package com.tatvasoft.interview_portal.controller;
 
-import com.tatvasoft.interview_portal.dto.UserRequest;
-import com.tatvasoft.interview_portal.dto.UserResponse;
+import com.tatvasoft.interview_portal.dto.*;
 import com.tatvasoft.interview_portal.service.UserService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,23 +18,56 @@ public class UserController {
     }
 
     @PostMapping
-    public UserResponse createUser(@RequestBody UserRequest request) {
-        return userService.createUser(request);
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(
+            @RequestBody UserRequest request) {
+
+        UserResponse user = userService.createUser(request);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(200, true, null, user)
+        );
     }
 
     @GetMapping
-    public List<UserResponse> getAllUsers() {
-        return userService.getAllUsers();
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        userService.getAllUsers()
+                )
+        );
     }
 
     @GetMapping("/{id}")
-    public UserResponse getUser(@PathVariable Long id) {
-        return userService.getUserById(id);
+    public ResponseEntity<ApiResponse<UserResponse>> getUser(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        userService.getUserById(id)
+                )
+        );
     }
 
     @DeleteMapping("/{id}")
-    public String deleteUser(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<String>> deleteUser(
+            @PathVariable Long id) {
+
         userService.deleteUser(id);
-        return "User deleted successfully";
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        "User deleted successfully"
+                )
+        );
     }
 }
