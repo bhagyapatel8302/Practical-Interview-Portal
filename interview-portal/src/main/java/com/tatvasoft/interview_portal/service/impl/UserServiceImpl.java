@@ -9,9 +9,11 @@ import com.tatvasoft.interview_portal.exception.UserAlreadyExistsException;
 import com.tatvasoft.interview_portal.repository.RoleRepository;
 import com.tatvasoft.interview_portal.repository.UserRepository;
 import com.tatvasoft.interview_portal.service.UserService;
+import com.tatvasoft.interview_portal.util.SecurityUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,22 +41,24 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Role not found"));
 
+        String username = SecurityUtil.getCurrentUsername();
+
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new RuntimeException("Logged in user not found"));
+
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(request.getEmail());
         user.setIsActive(request.getIsActive());
         user.setRole(role);
+        user.setCreatedAt(LocalDateTime.now());
+        user.setCreatedBy(currentUser.getId());
 
         User saved = userRepository.save(user);
 
-        return new UserResponse(
-                saved.getId(),
-                saved.getUsername(),
-                saved.getEmail(),
-                saved.getRole().getId(),
-                saved.getIsActive()
-        );
+        return map(saved);
     }
 
     @Override
@@ -107,5 +111,16 @@ public class UserServiceImpl implements UserService {
         }
 
         return user;
+    }
+
+    private UserResponse map(User user) {
+
+        return new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole().getId(),
+                user.getIsActive()
+        );
     }
 }

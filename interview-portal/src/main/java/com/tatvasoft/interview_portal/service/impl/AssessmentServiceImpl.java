@@ -3,9 +3,12 @@ package com.tatvasoft.interview_portal.service.impl;
 import com.tatvasoft.interview_portal.dto.AssessmentRequest;
 import com.tatvasoft.interview_portal.dto.AssessmentResponse;
 import com.tatvasoft.interview_portal.entity.Assessment;
+import com.tatvasoft.interview_portal.entity.User;
 import com.tatvasoft.interview_portal.enums.AssessmentStatus;
 import com.tatvasoft.interview_portal.repository.AssessmentRepository;
+import com.tatvasoft.interview_portal.repository.UserRepository;
 import com.tatvasoft.interview_portal.service.AssessmentService;
+import com.tatvasoft.interview_portal.util.SecurityUtil;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,13 +18,21 @@ import java.util.List;
 public class AssessmentServiceImpl implements AssessmentService {
 
     private final AssessmentRepository repository;
+    private final UserRepository userRepository;
 
-    public AssessmentServiceImpl(AssessmentRepository repository) {
+    public AssessmentServiceImpl(AssessmentRepository repository,UserRepository userRepository) {
         this.repository = repository;
+        this.userRepository = userRepository;
     }
 
     @Override
     public AssessmentResponse create(AssessmentRequest request) {
+
+        String username = SecurityUtil.getCurrentUsername();
+
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new RuntimeException("Logged in user not found"));
 
         Assessment a = new Assessment();
 
@@ -33,7 +44,7 @@ public class AssessmentServiceImpl implements AssessmentService {
         a.setStartedAt(request.getStartedAt());
         a.setCompletedAt(request.getCompletedAt());
 
-        a.setCreatedBy(request.getCreatedBy() != null ? request.getCreatedBy() : 1L);
+        a.setCreatedBy(currentUser.getId());
         a.setCreatedAt(LocalDateTime.now());
 
         Assessment saved = repository.save(a);
@@ -60,6 +71,12 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     public AssessmentResponse update(Long id, AssessmentRequest request) {
 
+        String username = SecurityUtil.getCurrentUsername();
+
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new RuntimeException("Logged in user not found"));
+
         Assessment a = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Assessment not found"));
 
@@ -70,7 +87,7 @@ public class AssessmentServiceImpl implements AssessmentService {
         a.setStartedAt(request.getStartedAt());
         a.setCompletedAt(request.getCompletedAt());
 
-        a.setUpdatedBy(request.getUpdatedBy() != null ? request.getUpdatedBy() : 1L);
+        a.setUpdatedBy(currentUser.getId());
         a.setUpdatedAt(LocalDateTime.now());
 
         return map(repository.save(a));

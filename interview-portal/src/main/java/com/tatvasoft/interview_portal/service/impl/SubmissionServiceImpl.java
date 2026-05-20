@@ -3,8 +3,11 @@ package com.tatvasoft.interview_portal.service.impl;
 import com.tatvasoft.interview_portal.dto.SubmissionRequest;
 import com.tatvasoft.interview_portal.dto.SubmissionResponse;
 import com.tatvasoft.interview_portal.entity.Submission;
+import com.tatvasoft.interview_portal.entity.User;
 import com.tatvasoft.interview_portal.repository.SubmissionRepository;
+import com.tatvasoft.interview_portal.repository.UserRepository;
 import com.tatvasoft.interview_portal.service.SubmissionService;
+import com.tatvasoft.interview_portal.util.SecurityUtil;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -14,13 +17,21 @@ import java.util.List;
 public class SubmissionServiceImpl implements SubmissionService {
 
     private final SubmissionRepository repository;
+    private final UserRepository userRepository;
 
-    public SubmissionServiceImpl(SubmissionRepository repository) {
+    public SubmissionServiceImpl(SubmissionRepository repository,UserRepository userRepository) {
         this.repository = repository;
+        this.userRepository = userRepository;
     }
 
     @Override
     public SubmissionResponse create(SubmissionRequest request) {
+
+        String username = SecurityUtil.getCurrentUsername();
+
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new RuntimeException("Logged in user not found"));
 
         Submission s = new Submission();
 
@@ -36,7 +47,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         s.setEvaluatedAt(request.getEvaluatedAt());
 
-        s.setCreatedBy(request.getCreatedBy() != null ? request.getCreatedBy() : 1L);
+        s.setCreatedBy(currentUser.getId());
         s.setCreatedAt(LocalDateTime.now());
 
         return map(repository.save(s));
@@ -65,6 +76,12 @@ public class SubmissionServiceImpl implements SubmissionService {
         Submission s = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Submission not found"));
 
+        String username = SecurityUtil.getCurrentUsername();
+
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new RuntimeException("Logged in user not found"));
+
         s.setCode(request.getCode());
         s.setOutput(request.getOutput());
 
@@ -73,7 +90,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         s.setEvaluatedAt(request.getEvaluatedAt());
 
-        s.setUpdatedBy(request.getUpdatedBy() != null ? request.getUpdatedBy() : 1L);
+        s.setUpdatedBy(currentUser.getId());
         s.setUpdatedAt(LocalDateTime.now());
 
         return map(repository.save(s));

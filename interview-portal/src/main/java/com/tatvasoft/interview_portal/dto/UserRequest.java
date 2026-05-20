@@ -1,6 +1,5 @@
 package com.tatvasoft.interview_portal.dto;
 
-import com.tatvasoft.interview_portal.entity.Role;
 import lombok.Data;
 
 @Data

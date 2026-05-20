@@ -7,6 +7,7 @@ import com.tatvasoft.interview_portal.entity.User;
 import com.tatvasoft.interview_portal.repository.QuestionsRepository;
 import com.tatvasoft.interview_portal.repository.UserRepository;
 import com.tatvasoft.interview_portal.service.QuestionService;
+import com.tatvasoft.interview_portal.util.SecurityUtil;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,10 +29,14 @@ public class QuestionServiceImpl implements QuestionService {
         this.userRepository = userRepository;
     }
 
-    private Long idCounter = 1L;
-
     @Override
     public Question addQuestion(QuestionRequest request) {
+
+        String username = SecurityUtil.getCurrentUsername();
+
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new RuntimeException("Logged in user not found"));
 
         Question q = new Question();
         q.setTitle(request.getTitle());
@@ -39,15 +44,7 @@ public class QuestionServiceImpl implements QuestionService {
         q.setDifficulty(request.getDifficulty());
         q.setEstimatedTime(request.getEstimatedTime());
         q.setIsActive(request.getIsActive());
-
-        String username = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        q.setCreatedBy(user.getId());
+        q.setCreatedBy(currentUser.getId());
 
         return questionRepository.save(q);
     }
@@ -76,6 +73,12 @@ public class QuestionServiceImpl implements QuestionService {
     @Override
     public Question updateQuestion(Long id, QuestionRequest request) {
 
+        String username = SecurityUtil.getCurrentUsername();
+
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new RuntimeException("Logged in user not found"));
+
         Question q = questionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Question not found"));
 
@@ -84,15 +87,7 @@ public class QuestionServiceImpl implements QuestionService {
         q.setDifficulty(request.getDifficulty());
         q.setEstimatedTime(request.getEstimatedTime());
         q.setIsActive(request.getIsActive());
-
-        String username = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        q.setUpdatedBy(user.getId());
+        q.setUpdatedBy(currentUser.getId());
 
         return questionRepository.save(q);
     }
@@ -109,6 +104,12 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public List<Question> uploadZip(MultipartFile file) {
+
+        String username = SecurityUtil.getCurrentUsername();
+
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new RuntimeException("Logged in user not found"));
 
         List<Question> uploaded = new ArrayList<>();
 
@@ -136,7 +137,7 @@ public class QuestionServiceImpl implements QuestionService {
                     q.setEstimatedTime(time);
                     q.setIsActive(status);
 
-                    q.setCreatedBy(1L);
+                    q.setCreatedBy(currentUser.getId());
 
                     questionRepository.save(q);
                     uploaded.add(q);
