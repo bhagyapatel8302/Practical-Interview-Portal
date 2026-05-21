@@ -123,4 +123,25 @@ public class UserServiceImpl implements UserService {
                 user.getIsActive()
         );
     }
+
+    @Override
+    public User getUserByEmail(String email) {
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+    }
+
+    @Override
+    public User getUserByResetToken(String token) {
+
+        return userRepository.findByResetToken(token)
+                .orElseThrow(() ->
+                        new RuntimeException("Invalid reset token"));
+    }
+
+    @Override
+    public User save(User user) {
+        return userRepository.save(user);
+    }
 }

@@ -1,16 +1,18 @@
 package com.tatvasoft.interview_portal.controller;
 
-import com.tatvasoft.interview_portal.dto.ApiResponse;
-import com.tatvasoft.interview_portal.dto.LoginRequest;
-import com.tatvasoft.interview_portal.dto.LoginResponse;
+import com.tatvasoft.interview_portal.dto.*;
 import com.tatvasoft.interview_portal.entity.User;
+import com.tatvasoft.interview_portal.service.EmailService;
 import com.tatvasoft.interview_portal.service.UserService;
 import com.tatvasoft.interview_portal.util.JwtUtil;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/auth")
@@ -19,10 +21,14 @@ public class AuthController {
 
     private final JwtUtil jwtUtil;
     private final UserService userService;
+    private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
-    public AuthController(JwtUtil jwtUtil, UserService userService) {
+    public AuthController(JwtUtil jwtUtil, UserService userService, EmailService emailService, PasswordEncoder passwordEncoder) {
         this.jwtUtil = jwtUtil;
         this.userService = userService;
+        this.emailService = emailService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/login")
@@ -91,5 +97,72 @@ public class AuthController {
         String newAccessToken = jwtUtil.generateAccessToken(user);
 
         return Map.of("accessToken", newAccessToken);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(
+            @RequestBody ForgotPasswordRequest request) {
+
+        User user = userService.getUserByEmail(request.getEmail());
+
+        String token = UUID.randomUUID().toString();
+
+        user.setResetToken(token);
+
+        user.setResetTokenExpiry(
+                LocalDateTime.now().plusMinutes(15)
+        );
+
+        userService.save(user);
+
+        String resetLink =
+                "http://localhost:4200/auth/reset-password?token="
+                        + token;
+
+        emailService.sendResetPasswordEmail(
+                user.getEmail(),
+                resetLink
+        );
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        "Reset password link sent on email"
+                )
+        );
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(
+            @RequestBody ResetPasswordRequest request) {
+
+        User user =
+                userService.getUserByResetToken(request.getToken());
+
+        // check token expiry
+        if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Reset token expired");
+        }
+
+        user.setPassword(
+                passwordEncoder.encode(request.getNewPassword())
+        );
+
+        // clear token after use
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+
+        userService.save(user);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        "Password reset successfully"
+                )
+        );
     }
 }

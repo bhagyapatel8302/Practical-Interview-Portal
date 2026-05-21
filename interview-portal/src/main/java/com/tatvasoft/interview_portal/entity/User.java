@@ -35,4 +35,10 @@ public class User {
 
     @Column(name = "updated_by")
     private Long updatedBy;
+
+    @Column(name = "reset_token")
+    private String resetToken;
+
+    @Column(name = "reset_token_expiry")
+    private LocalDateTime resetTokenExpiry;
 }

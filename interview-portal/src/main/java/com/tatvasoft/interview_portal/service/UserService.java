@@ -19,4 +19,9 @@ public interface UserService {
 
     void deleteUser(Long id);
 
+    User getUserByEmail(String email);
+
+    User getUserByResetToken(String token);
+
+    User save(User user);
 }
