@@ -35,7 +35,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
 
         try {
-            User user = userService.login(request.getUsername(), request.getPassword());
+            User user = userService.login(request.getEmail(), request.getPassword());
 
             // check active user
             if (!Boolean.TRUE.equals(user.getIsActive())) {
@@ -53,7 +53,7 @@ public class AuthController {
             String accessToken = jwtUtil.generateAccessToken(user);
             String refreshToken = jwtUtil.generateRefreshToken(user);
 
-            LoginResponse loginResponse = new LoginResponse(accessToken, refreshToken);
+            LoginResponse loginResponse = new LoginResponse(accessToken, refreshToken, user);
 
             ApiResponse<LoginResponse> response = new ApiResponse<>(
                     200,
@@ -116,8 +116,7 @@ public class AuthController {
         userService.save(user);
 
         String resetLink =
-                "http://localhost:4200/auth/reset-password?token="
-                        + token;
+                "http://localhost:4200/auth/reset-password/" + token;
 
         emailService.sendResetPasswordEmail(
                 user.getEmail(),
@@ -162,6 +161,49 @@ public class AuthController {
                         true,
                         null,
                         "Password reset successfully"
+                )
+        );
+    }
+
+    @GetMapping("/validate-reset-token/{token}")
+    public ResponseEntity<ApiResponse<String>> validateResetToken(
+            @PathVariable String token) {
+
+        User user = userService.getUserByResetToken(token);
+
+        // token not found
+        if (user == null) {
+
+            return ResponseEntity.badRequest().body(
+                    new ApiResponse<>(
+                            400,
+                            false,
+                            List.of("Invalid reset token"),
+                            null
+                    )
+            );
+        }
+
+        // token expired
+        if (user.getResetTokenExpiry() == null ||
+                user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+
+            return ResponseEntity.badRequest().body(
+                    new ApiResponse<>(
+                            400,
+                            false,
+                            List.of("Reset token expired"),
+                            null
+                    )
+            );
+        }
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        "Token is valid"
                 )
         );
     }

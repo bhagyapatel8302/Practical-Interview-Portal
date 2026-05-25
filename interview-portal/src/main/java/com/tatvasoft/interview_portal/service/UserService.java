@@ -7,7 +7,7 @@ import com.tatvasoft.interview_portal.entity.User;
 import java.util.List;
 
 public interface UserService {
-    User login(String username, String password);
+    User login(String email, String password);
 
     UserResponse createUser(UserRequest request);
 
