@@ -55,6 +55,24 @@ public class UserController {
         );
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUser(
+            @PathVariable Long id,
+            @RequestBody UserRequest request) {
+
+        UserResponse user =
+                userService.updateUser(id, request);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        user
+                )
+        );
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteUser(
             @PathVariable Long id) {

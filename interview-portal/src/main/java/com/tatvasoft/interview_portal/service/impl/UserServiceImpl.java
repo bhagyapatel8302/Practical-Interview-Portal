@@ -144,4 +144,43 @@ public class UserServiceImpl implements UserService {
     public User save(User user) {
         return userRepository.save(user);
     }
+
+    @Override
+    public UserResponse updateUser(
+            Long id,
+            UserRequest request) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        user.setUsername(request.getUsername());
+
+        user.setEmail(request.getEmail());
+
+        user.setIsActive(request.getIsActive());
+
+        Role role = roleRepository.findById(
+                request.getRoleId()
+        ).orElseThrow(() ->
+                new RuntimeException("Role not found"));
+
+        user.setRole(role);
+
+        // optional password update
+
+        if (request.getPassword() != null
+                && !request.getPassword().isBlank()) {
+
+            user.setPassword(
+                    passwordEncoder.encode(
+                            request.getPassword()
+                    )
+            );
+        }
+
+        userRepository.save(user);
+
+        return map(user);
+    }
 }

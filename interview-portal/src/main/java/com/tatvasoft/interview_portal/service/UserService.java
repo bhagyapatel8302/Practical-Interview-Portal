@@ -24,4 +24,6 @@ public interface UserService {
     User getUserByResetToken(String token);
 
     User save(User user);
+
+    UserResponse updateUser(Long id, UserRequest request);
 }
