@@ -1,5 +1,6 @@
 package com.tatvasoft.interview_portal.service;
 
+import com.tatvasoft.interview_portal.dto.CategoryResponse;
 import com.tatvasoft.interview_portal.dto.QuestionRequest;
 import com.tatvasoft.interview_portal.dto.QuestionResponse;
 import com.tatvasoft.interview_portal.entity.Question;
@@ -9,13 +10,15 @@ import java.util.List;
 
 public interface QuestionService {
 
-    Question addQuestion(QuestionRequest request);
+    QuestionResponse addQuestion(QuestionRequest request);
 
     List<QuestionResponse> getAllQuestions();
 
-    Question getQuestion(Long id);
+    List<CategoryResponse> getAllCategories();
 
-    Question updateQuestion(Long id, QuestionRequest request);
+    QuestionResponse getQuestion(Long id);
+
+    QuestionResponse updateQuestion(Long id, QuestionRequest request);
 
     void deleteQuestion(Long id);
 

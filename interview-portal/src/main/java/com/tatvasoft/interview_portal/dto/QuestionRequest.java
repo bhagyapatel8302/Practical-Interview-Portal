@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -13,4 +15,6 @@ public class QuestionRequest {
     private String difficulty;
     private Integer estimatedTime;
     private Boolean isActive;
+    private List<Long> categoryIds;
+    private List<SolutionDto> solutions;
 }

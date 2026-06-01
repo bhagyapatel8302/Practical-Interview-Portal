@@ -21,4 +21,15 @@ public class Question {
     private Boolean isActive;
     private Long createdBy = null;
     private Long updatedBy = null;
+
+    @ManyToMany
+    @JoinTable(
+            name = "question_categories",
+            joinColumns = @JoinColumn(name = "question_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private java.util.Set<Category> categories = new java.util.HashSet<>();
+
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<QuestionSolution> solutions = new java.util.ArrayList<>();
 }

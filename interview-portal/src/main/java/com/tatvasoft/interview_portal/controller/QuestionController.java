@@ -1,6 +1,7 @@
 package com.tatvasoft.interview_portal.controller;
 
 import com.tatvasoft.interview_portal.dto.ApiResponse;
+import com.tatvasoft.interview_portal.dto.CategoryResponse;
 import com.tatvasoft.interview_portal.dto.QuestionRequest;
 import com.tatvasoft.interview_portal.dto.QuestionResponse;
 import com.tatvasoft.interview_portal.entity.Question;
@@ -22,17 +23,17 @@ public class QuestionController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Question>> addQuestion(
+    public ResponseEntity<ApiResponse<String>> addQuestion(
             @RequestBody QuestionRequest request) {
 
-        Question question = questionService.addQuestion(request);
+        questionService.addQuestion(request);
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         200,
                         true,
                         null,
-                        question
+                        "Question Created successfully"
                 )
         );
     }
@@ -51,7 +52,7 @@ public class QuestionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Question>> get(
+    public ResponseEntity<ApiResponse<QuestionResponse>> get(
             @PathVariable Long id) {
 
         return ResponseEntity.ok(
@@ -65,19 +66,18 @@ public class QuestionController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Question>> update(
+    public ResponseEntity<ApiResponse<String>> update(
             @PathVariable Long id,
             @RequestBody QuestionRequest request) {
 
-        Question question =
-                questionService.updateQuestion(id, request);
+        questionService.updateQuestion(id, request);
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
                         200,
                         true,
                         null,
-                        question
+                        "Question updated successfully"
                 )
         );
     }
@@ -111,6 +111,19 @@ public class QuestionController {
                         true,
                         null,
                         uploadedQuestions
+                )
+        );
+    }
+
+    @GetMapping("/category")
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllCategories() {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        questionService.getAllCategories()
                 )
         );
     }
