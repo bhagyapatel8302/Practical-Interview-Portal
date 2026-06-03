@@ -1,41 +1,34 @@
 package com.tatvasoft.interview_portal.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "submissions")
+@Table(name = "candidate_solutions")
 @Getter
 @Setter
-public class Submission {
+public class CandidateSolution {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "assessment_id")
-    private Long assessmentId;
+    @Column(name = "submission_id")
+    private Long submissionId;
 
-    @Column(name = "reference_file_id")
-    private Long referenceFileId;
+    @Column(name = "question_id")
+    private Long questionId;
 
-    @Column(name = "candidate_id")
-    private Long candidateId;
-
-    private String code;
-
-    private String output;
+    private String solution;
 
     @Column(name = "ai_score")
     private Integer aiScore;
 
     @Column(name = "ai_feedback")
     private String aiFeedback;
-
-    @Column(name = "evaluated_at")
-    private LocalDateTime evaluatedAt;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

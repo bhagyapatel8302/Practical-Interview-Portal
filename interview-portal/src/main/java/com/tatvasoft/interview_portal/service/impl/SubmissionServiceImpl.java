@@ -4,6 +4,8 @@ import com.tatvasoft.interview_portal.dto.SubmissionRequest;
 import com.tatvasoft.interview_portal.dto.SubmissionResponse;
 import com.tatvasoft.interview_portal.entity.Submission;
 import com.tatvasoft.interview_portal.entity.User;
+import com.tatvasoft.interview_portal.repository.AssessmentRepository;
+import com.tatvasoft.interview_portal.repository.CandidateRepository;
 import com.tatvasoft.interview_portal.repository.SubmissionRepository;
 import com.tatvasoft.interview_portal.repository.UserRepository;
 import com.tatvasoft.interview_portal.service.SubmissionService;
@@ -18,10 +20,19 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     private final SubmissionRepository repository;
     private final UserRepository userRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final CandidateRepository candidateRepository;
 
-    public SubmissionServiceImpl(SubmissionRepository repository,UserRepository userRepository) {
+    public SubmissionServiceImpl(
+            SubmissionRepository repository,
+            UserRepository userRepository,
+            AssessmentRepository assessmentRepository,
+            CandidateRepository candidateRepository) {
+
         this.repository = repository;
         this.userRepository = userRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.candidateRepository = candidateRepository;
     }
 
     @Override
@@ -37,7 +48,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         s.setAssessmentId(request.getAssessmentId());
         s.setReferenceFileId(request.getReferenceFileId());
-        s.setCandidateFileId(request.getCandidateFileId());
+        s.setCandidateId(request.getCandidateId());
 
         s.setCode(request.getCode());
         s.setOutput(request.getOutput());
@@ -107,18 +118,44 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     private SubmissionResponse map(Submission s) {
+
+        String assessmentName =
+                assessmentRepository
+                        .findById(s.getAssessmentId())
+                        .map(a -> a.getTitle())
+                        .orElse("");
+
+        String candidateName =
+                candidateRepository
+                        .findById(s.getCandidateId())
+                        .map(c ->
+                                c.getFirstName()
+                                        + " "
+                                        + c.getLastName())
+                        .orElse("");
+
         return new SubmissionResponse(
                 s.getId(),
+
                 s.getAssessmentId(),
+                assessmentName,
+
                 s.getReferenceFileId(),
-                s.getCandidateFileId(),
+
+                s.getCandidateId(),
+                candidateName,
+
                 s.getCode(),
                 s.getOutput(),
+
                 s.getAiScore(),
                 s.getAiFeedback(),
+
                 s.getEvaluatedAt(),
+
                 s.getCreatedAt(),
                 s.getCreatedBy(),
+
                 s.getUpdatedAt(),
                 s.getUpdatedBy()
         );

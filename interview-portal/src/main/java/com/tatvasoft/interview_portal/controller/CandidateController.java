@@ -3,7 +3,9 @@ package com.tatvasoft.interview_portal.controller;
 import com.tatvasoft.interview_portal.dto.ApiResponse;
 import com.tatvasoft.interview_portal.dto.CandidateRequest;
 import com.tatvasoft.interview_portal.dto.CandidateResponse;
+import com.tatvasoft.interview_portal.dto.CandidateSolutionResponse;
 import com.tatvasoft.interview_portal.service.CandidateService;
+import com.tatvasoft.interview_portal.service.CandidateSolutionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
