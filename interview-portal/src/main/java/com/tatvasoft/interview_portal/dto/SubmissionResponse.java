@@ -12,8 +12,12 @@ public class SubmissionResponse {
     private Long id;
 
     private Long assessmentId;
+    private String assessmentName;
+
     private Long referenceFileId;
-    private Long candidateFileId;
+
+    private Long candidateId;
+    private String candidateName;
 
     private String code;
     private String output;

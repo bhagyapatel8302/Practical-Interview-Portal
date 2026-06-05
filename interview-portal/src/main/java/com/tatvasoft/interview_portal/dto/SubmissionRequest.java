@@ -9,7 +9,7 @@ public class SubmissionRequest {
 
     private Long assessmentId;
     private Long referenceFileId;
-    private Long candidateFileId;
+    private Long candidateId;
 
     private String code;
     private String output;

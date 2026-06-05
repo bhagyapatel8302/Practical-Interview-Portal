@@ -43,4 +43,7 @@ public class Assessment {
 
     @Column(name = "updated_by")
     private Long updatedBy;
+
+    @Column(name = "title")
+    private String title;
 }

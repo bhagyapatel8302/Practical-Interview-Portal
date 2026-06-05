@@ -114,6 +114,7 @@ public class AssessmentServiceImpl implements AssessmentService {
                 a.getStatus(),
                 a.getTimeLimitMinutes(),
                 a.getIsActive(),
+                a.getTitle(),
                 a.getStartedAt(),
                 a.getCompletedAt(),
                 a.getCreatedAt(),

@@ -14,6 +14,7 @@ public class AssessmentResponse {
     private String status;
     private Integer timeLimitMinutes;
     private Boolean isActive;
+    private String title;
 
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
