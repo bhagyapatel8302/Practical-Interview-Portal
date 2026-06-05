@@ -1,11 +1,10 @@
 package com.tatvasoft.interview_portal.service.impl;
 
-import com.tatvasoft.interview_portal.dto.UserRequest;
-import com.tatvasoft.interview_portal.dto.UserResponse;
+import com.tatvasoft.interview_portal.dto.*;
 import com.tatvasoft.interview_portal.entity.Role;
 import com.tatvasoft.interview_portal.entity.User;
-import com.tatvasoft.interview_portal.exception.ResourceNotFoundException;
-import com.tatvasoft.interview_portal.exception.UserAlreadyExistsException;
+import com.tatvasoft.interview_portal.exception.*;
+import com.tatvasoft.interview_portal.mapper.UserMapper;
 import com.tatvasoft.interview_portal.repository.RoleRepository;
 import com.tatvasoft.interview_portal.repository.UserRepository;
 import com.tatvasoft.interview_portal.service.UserService;
@@ -21,100 +20,110 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository) {
+    public UserServiceImpl(UserRepository userRepository,
+                           RoleRepository roleRepository,
+                           PasswordEncoder passwordEncoder,
+                           UserMapper userMapper) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.userMapper = userMapper;
     }
 
     @Override
     public UserResponse createUser(UserRequest request) {
-
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new UserAlreadyExistsException("Username already exists");
         }
 
+         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+             throw new UserAlreadyExistsException("Email already in use");
+         }
+
         Role role = roleRepository.findById(request.getRoleId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
-        String username = SecurityUtil.getCurrentUsername();
+        String currentUsername = SecurityUtil.getCurrentUsername();
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new ResourceNotFoundException("Logged in user not found"));
 
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() ->
-                        new RuntimeException("Logged in user not found"));
+        User user = userMapper.toEntity(
+                request,
+                passwordEncoder.encode(request.getPassword()),
+                role,
+                currentUser.getId()
+        );
 
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setEmail(request.getEmail());
-        user.setIsActive(request.getIsActive());
-        user.setRole(role);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setCreatedBy(currentUser.getId());
-
-        User saved = userRepository.save(user);
-
-        return map(saved);
+        User savedUser = userRepository.save(user);
+        return mapToResponse(savedUser);
     }
 
     @Override
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(u -> new UserResponse(
-                        u.getId(),
-                        u.getUsername(),
-                        u.getEmail(),
-                        u.getRole().getId(),
-                        u.getIsActive()
-                ))
+        return userRepository.findAll().stream()
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        return new UserResponse(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getRole().getId(),
-                user.getIsActive()
-        );
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        return mapToResponse(user);
     }
 
     @Override
-    public User getUserByUserName(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public UserResponse updateUser(Long id, UserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        // Note: If allowing username/email updates, you should verify the new ones don't belong to another user here.
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setIsActive(request.getIsActive());
+
+        Role role = roleRepository.findById(request.getRoleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+        user.setRole(role);
+
+        // Only update the password if a new one is provided in the request
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        User updatedUser = userRepository.save(user);
+        return mapToResponse(updatedUser);
     }
 
     @Override
     public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new ResourceNotFoundException("User not found with id: " + id);
+        }
         userRepository.deleteById(id);
     }
 
+    // --- Internal Lookups for Security/Other Services ---
+
     @Override
-    public User login(String email, String password) {
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new RuntimeException("Invalid password");
-        }
-
-        return user;
+    public User getUserByUserName(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
     }
 
-    private UserResponse map(User user) {
+    @Override
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+    }
 
+    // --- Private Helper Methods ---
+
+    private UserResponse mapToResponse(User user) {
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
@@ -122,65 +131,5 @@ public class UserServiceImpl implements UserService {
                 user.getRole().getId(),
                 user.getIsActive()
         );
-    }
-
-    @Override
-    public User getUserByEmail(String email) {
-
-        return userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
-    }
-
-    @Override
-    public User getUserByResetToken(String token) {
-
-        return userRepository.findByResetToken(token)
-                .orElseThrow(() ->
-                        new RuntimeException("Invalid reset token"));
-    }
-
-    @Override
-    public User save(User user) {
-        return userRepository.save(user);
-    }
-
-    @Override
-    public UserResponse updateUser(
-            Long id,
-            UserRequest request) {
-
-        User user = userRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
-
-        user.setUsername(request.getUsername());
-
-        user.setEmail(request.getEmail());
-
-        user.setIsActive(request.getIsActive());
-
-        Role role = roleRepository.findById(
-                request.getRoleId()
-        ).orElseThrow(() ->
-                new RuntimeException("Role not found"));
-
-        user.setRole(role);
-
-        // optional password update
-
-        if (request.getPassword() != null
-                && !request.getPassword().isBlank()) {
-
-            user.setPassword(
-                    passwordEncoder.encode(
-                            request.getPassword()
-                    )
-            );
-        }
-
-        userRepository.save(user);
-
-        return map(user);
     }
 }
