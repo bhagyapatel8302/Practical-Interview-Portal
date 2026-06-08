@@ -34,6 +34,9 @@ public class Submission {
     @Column(name = "ai_feedback")
     private String aiFeedback;
 
+    @Column(name = "status")
+    private String status;
+
     @Column(name = "evaluated_at")
     private LocalDateTime evaluatedAt;
 

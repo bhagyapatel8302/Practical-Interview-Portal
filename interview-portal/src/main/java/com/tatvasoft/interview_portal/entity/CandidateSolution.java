@@ -22,6 +22,7 @@ public class CandidateSolution {
     @Column(name = "question_id")
     private Long questionId;
 
+    @Column(columnDefinition = "TEXT")
     private String solution;
 
     @Column(name = "ai_score")
@@ -29,6 +30,22 @@ public class CandidateSolution {
 
     @Column(name = "ai_feedback")
     private String aiFeedback;
+
+    @Column(name = "time_complexity")
+    private String timeComplexity;
+
+    @Column(name = "space_complexity")
+    private String spaceComplexity;
+
+    @Column(name = "missed_edge_cases")
+    private String missedEdgeCases;
+
+    @Column(name = "security_issues")
+    private String securityIssues;
+
+    @Column(name = "optimized_code", columnDefinition = "TEXT")
+
+    private String optimizedCode;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

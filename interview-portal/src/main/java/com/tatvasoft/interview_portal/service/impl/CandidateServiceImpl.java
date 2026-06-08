@@ -1,17 +1,20 @@
 package com.tatvasoft.interview_portal.service.impl;
 
+import com.tatvasoft.interview_portal.ai.dto.MultiQuestionEvaluationResult;
+import com.tatvasoft.interview_portal.ai.dto.QuestionEvaluationResult;
+import com.tatvasoft.interview_portal.dto.CandidateEvaluationResponse;
 import com.tatvasoft.interview_portal.dto.CandidateRequest;
 import com.tatvasoft.interview_portal.dto.CandidateResponse;
-import com.tatvasoft.interview_portal.entity.Candidate;
-import com.tatvasoft.interview_portal.entity.User;
+import com.tatvasoft.interview_portal.dto.QuestionUploadDto;
+import com.tatvasoft.interview_portal.entity.*;
 import com.tatvasoft.interview_portal.exception.ResourceNotFoundException;
-import com.tatvasoft.interview_portal.repository.CandidateRepository;
-import com.tatvasoft.interview_portal.repository.UserRepository;
+import com.tatvasoft.interview_portal.repository.*;
 import com.tatvasoft.interview_portal.service.CandidateService;
 import com.tatvasoft.interview_portal.util.SecurityUtil;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,11 +22,23 @@ import java.util.stream.Collectors;
 public class CandidateServiceImpl implements CandidateService {
 
     private final CandidateRepository candidateRepository;
+    private final AssessmentRepository assessmentRepository;
     private final UserRepository userRepository;
+    private final SubmissionRepository submissionRepository;
+    private final QuestionsRepository questionsRepository;
+    private final AssessmentQuestionRepository assessmentQuestionRepository;
+    private final CandidateSolutionRepository candidateSolutionRepository;
+    private final ReferenceSolutionRepository referenceSolutionRepository;
 
-    public CandidateServiceImpl(CandidateRepository candidateRepository,UserRepository userRepository) {
+    public CandidateServiceImpl(CandidateRepository candidateRepository, UserRepository userRepository, SubmissionRepository submissionRepository, AssessmentRepository assessmentRepository, QuestionsRepository questionsRepository, AssessmentQuestionRepository assessmentQuestionRepository, CandidateSolutionRepository candidateSolutionRepository, ReferenceSolutionRepository referenceSolutionRepository) {
         this.candidateRepository = candidateRepository;
         this.userRepository = userRepository;
+        this.submissionRepository = submissionRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.questionsRepository = questionsRepository;
+        this.assessmentQuestionRepository = assessmentQuestionRepository;
+        this.candidateSolutionRepository = candidateSolutionRepository;
+        this.referenceSolutionRepository = referenceSolutionRepository;
     }
 
     @Override
@@ -35,9 +50,7 @@ public class CandidateServiceImpl implements CandidateService {
 
         String username = SecurityUtil.getCurrentUsername();
 
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() ->
-                        new RuntimeException("Logged in user not found"));
+        User currentUser = userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("Logged in user not found"));
 
         Candidate candidate = new Candidate();
 
@@ -59,18 +72,13 @@ public class CandidateServiceImpl implements CandidateService {
     @Override
     public List<CandidateResponse> getAll() {
 
-        return candidateRepository.findAll()
-                .stream()
-                .map(this::map)
-                .collect(Collectors.toList());
+        return candidateRepository.findAll().stream().map(this::map).collect(Collectors.toList());
     }
 
     @Override
     public CandidateResponse getById(Long id) {
 
-        Candidate candidate = candidateRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Candidate not found"));
+        Candidate candidate = candidateRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 
         return map(candidate);
     }
@@ -78,15 +86,11 @@ public class CandidateServiceImpl implements CandidateService {
     @Override
     public CandidateResponse update(Long id, CandidateRequest request) {
 
-        Candidate candidate = candidateRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Candidate not found"));
+        Candidate candidate = candidateRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 
         String username = SecurityUtil.getCurrentUsername();
 
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() ->
-                        new RuntimeException("Logged in user not found"));
+        User currentUser = userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("Logged in user not found"));
 
         candidate.setFirstName(request.getFirstName());
         candidate.setLastName(request.getLastName());
@@ -105,23 +109,116 @@ public class CandidateServiceImpl implements CandidateService {
     @Override
     public void delete(Long id) {
 
-        Candidate candidate = candidateRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Candidate not found"));
+        Candidate candidate = candidateRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 
         candidateRepository.delete(candidate);
     }
 
     private CandidateResponse map(Candidate candidate) {
 
-        return new CandidateResponse(
-                candidate.getId(),
-                candidate.getFirstName(),
-                candidate.getLastName(),
-                candidate.getEmail(),
-                candidate.getExperience(),
-                candidate.getDesignation(),
-                candidate.getIsActive()
-        );
+        return new CandidateResponse(candidate.getId(), candidate.getFirstName(), candidate.getLastName(), candidate.getEmail(), candidate.getExperience(), candidate.getDesignation(), candidate.getIsActive());
+    }
+
+    @Override
+    public CandidateEvaluationResponse getCandidateEvaluation(Long candidateId) {
+
+        Assessment assessment = assessmentRepository.findByCandidateId(candidateId).orElseThrow();
+
+        CandidateEvaluationResponse response = new CandidateEvaluationResponse();
+
+        response.setAssessmentId(assessment.getId());
+
+        response.setAssessmentTitle(assessment.getTitle());
+
+        Submission submission = submissionRepository.findByAssessmentId(assessment.getId()).orElse(null);
+
+        if (submission != null) {
+
+            response.setIsEvaluated(true);
+
+            response.setEvaluation(buildEvaluationResult(assessment.getId()));
+
+            return response;
+        }
+
+        response.setIsEvaluated(false);
+
+        List<QuestionUploadDto> questions = loadQuestions((Math.toIntExact(assessment.getId())));
+
+        response.setQuestions(questions);
+
+        return response;
+    }
+
+    private MultiQuestionEvaluationResult buildEvaluationResult(Long assessmentId) {
+
+        MultiQuestionEvaluationResult result = new MultiQuestionEvaluationResult();
+
+        Submission submission = submissionRepository.findByAssessmentId(assessmentId).orElse(null);
+
+        List<CandidateSolution> solutions = candidateSolutionRepository.findBySubmissionId(submission.getId());
+
+        List<QuestionEvaluationResult> evaluations = new ArrayList<>();
+
+        for (CandidateSolution s : solutions) {
+
+            QuestionEvaluationResult q = new QuestionEvaluationResult();
+
+            q.setQuestionId(s.getQuestionId());
+
+            q.setScore(s.getAiScore());
+
+            q.setFeedback(s.getAiFeedback());
+
+            q.setTimeComplexity(s.getTimeComplexity());
+
+            q.setSpaceComplexity(s.getSpaceComplexity());
+
+            q.setOptimizedCode(s.getOptimizedCode());
+
+            evaluations.add(q);
+        }
+
+        result.setIsSuccess(true);
+
+        result.setEvaluations(evaluations);
+
+        result.setTotalQuestions(evaluations.size());
+
+        result.setOverallScore((double) submission.getAiScore());
+
+        return result;
+    }
+
+    private List<QuestionUploadDto> loadQuestions(Integer assessmentId) {
+
+        List<AssessmentQuestion> links = assessmentQuestionRepository.findByAssessmentId(assessmentId);
+
+        List<QuestionUploadDto> questions = new ArrayList<>();
+
+        for (AssessmentQuestion link : links) {
+
+            Question question = questionsRepository.findById(Long.valueOf(link.getQuestionId())).orElseThrow();
+
+            QuestionUploadDto dto = new QuestionUploadDto();
+
+            dto.setQuestionId(question.getId());
+
+            dto.setQuestionTitle(question.getTitle());
+
+            dto.setQuestionDescription(question.getDescription());
+            ReferenceSolution solution = referenceSolutionRepository.findByQuestionIdAndIsActiveTrue(question.getId()).orElse(null);
+
+            if (solution != null) {
+
+                dto.setSolutionFileId(solution.getId());
+
+                dto.setSolutionFileName(solution.getFileName());
+            }
+
+            questions.add(dto);
+        }
+
+        return questions;
     }
 }

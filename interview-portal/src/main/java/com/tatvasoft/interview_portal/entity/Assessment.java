@@ -18,6 +18,9 @@ public class Assessment {
     @Column(name = "candidate_id")
     private Long candidateId;
 
+    @Column(name = "title")
+    private String title;
+
     private String status;
 
     @Column(name = "time_limit_minutes")
@@ -44,6 +47,4 @@ public class Assessment {
     @Column(name = "updated_by")
     private Long updatedBy;
 
-    @Column(name = "title")
-    private String title;
 }

@@ -1,6 +1,7 @@
 package com.tatvasoft.interview_portal.controller;
 
 import com.tatvasoft.interview_portal.dto.ApiResponse;
+import com.tatvasoft.interview_portal.dto.CandidateEvaluationResponse;
 import com.tatvasoft.interview_portal.dto.CandidateRequest;
 import com.tatvasoft.interview_portal.dto.CandidateResponse;
 import com.tatvasoft.interview_portal.dto.CandidateSolutionResponse;
@@ -23,84 +24,48 @@ public class CandidateController {
 
     // CREATE CANDIDATE
     @PostMapping
-    public ResponseEntity<ApiResponse<CandidateResponse>> create(
-            @RequestBody CandidateRequest request) {
+    public ResponseEntity<ApiResponse<CandidateResponse>> create(@RequestBody CandidateRequest request) {
 
-        CandidateResponse candidate =
-                candidateService.create(request);
+        CandidateResponse candidate = candidateService.create(request);
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(
-                        200,
-                        true,
-                        null,
-                        candidate
-                )
-        );
+        return ResponseEntity.ok(new ApiResponse<>(200, true, null, candidate));
     }
 
     // GET ALL CANDIDATES
     @GetMapping
     public ResponseEntity<ApiResponse<List<CandidateResponse>>> getAll() {
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(
-                        200,
-                        true,
-                        null,
-                        candidateService.getAll()
-                )
-        );
+        return ResponseEntity.ok(new ApiResponse<>(200, true, null, candidateService.getAll()));
     }
 
     // GET CANDIDATE BY ID
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CandidateResponse>> getById(
-            @PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CandidateResponse>> getById(@PathVariable Long id) {
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(
-                        200,
-                        true,
-                        null,
-                        candidateService.getById(id)
-                )
-        );
+        return ResponseEntity.ok(new ApiResponse<>(200, true, null, candidateService.getById(id)));
     }
 
     // UPDATE CANDIDATE
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<CandidateResponse>> update(
-            @PathVariable Long id,
-            @RequestBody CandidateRequest request) {
+    public ResponseEntity<ApiResponse<CandidateResponse>> update(@PathVariable Long id, @RequestBody CandidateRequest request) {
 
-        CandidateResponse updatedCandidate =
-                candidateService.update(id, request);
+        CandidateResponse updatedCandidate = candidateService.update(id, request);
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(
-                        200,
-                        true,
-                        null,
-                        updatedCandidate
-                )
-        );
+        return ResponseEntity.ok(new ApiResponse<>(200, true, null, updatedCandidate));
     }
 
     // DELETE CANDIDATE
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> delete(
-            @PathVariable Long id) {
+    public ResponseEntity<ApiResponse<String>> delete(@PathVariable Long id) {
 
         candidateService.delete(id);
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(
-                        200,
-                        true,
-                        null,
-                        "Candidate deleted successfully"
-                )
-        );
+        return ResponseEntity.ok(new ApiResponse<>(200, true, null, "Candidate deleted successfully"));
+    }
+
+    @GetMapping("/candidate/{candidateId}")
+    public ResponseEntity<CandidateEvaluationResponse> getCandidateEvaluation(@PathVariable Long candidateId) {
+
+        return ResponseEntity.ok(candidateService.getCandidateEvaluation(candidateId));
     }
 }
