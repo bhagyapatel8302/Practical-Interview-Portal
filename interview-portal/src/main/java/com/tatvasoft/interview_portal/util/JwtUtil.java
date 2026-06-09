@@ -32,7 +32,7 @@ public class JwtUtil {
                 .claim("RoleName", user.getRole().getRoleName())
                 .claim("type", "access")
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 2)) // 1 day
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 4)) // 4 hours
                 .signWith(getKey())
                 .compact();
     }
@@ -48,7 +48,7 @@ public class JwtUtil {
                 .claim("RoleName", user.getRole().getRoleName())
                 .claim("type", "refresh")
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 3)) // 7 day
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 1 day
                 .signWith(getKey())
                 .compact();
     }
