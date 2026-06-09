@@ -1,5 +1,6 @@
 package com.tatvasoft.interview_portal.service;
 
+import com.tatvasoft.interview_portal.dto.CandidateEvaluationResponse;
 import com.tatvasoft.interview_portal.dto.CandidateRequest;
 import com.tatvasoft.interview_portal.dto.CandidateResponse;
 
@@ -14,6 +15,6 @@ public interface CandidateService {
     CandidateResponse getById(Long id);
 
     CandidateResponse update(Long id, CandidateRequest request);
-
+    CandidateEvaluationResponse getCandidateEvaluation(Long candidateId);
     void delete(Long id);
 }

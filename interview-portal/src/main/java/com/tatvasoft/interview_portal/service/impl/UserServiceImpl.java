@@ -77,29 +77,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse updateUser(Long id, UserRequest request) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
-
-        // Note: If allowing username/email updates, you should verify the new ones don't belong to another user here.
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setIsActive(request.getIsActive());
-
-        Role role = roleRepository.findById(request.getRoleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
-        user.setRole(role);
-
-        // Only update the password if a new one is provided in the request
-        if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
-        }
-
-        User updatedUser = userRepository.save(user);
-        return mapToResponse(updatedUser);
-    }
-
-    @Override
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("User not found with id: " + id);
@@ -120,6 +97,16 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
     }
+    public User login(String email, String password) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new ResourceNotFoundException("Invalid password");
+        }
+
+        return user;
+    }
 
     // --- Private Helper Methods ---
 
@@ -131,5 +118,44 @@ public class UserServiceImpl implements UserService {
                 user.getRole().getId(),
                 user.getIsActive()
         );
+    }
+
+    @Override
+    public UserResponse updateUser(
+            Long id,
+            UserRequest request) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        user.setUsername(request.getUsername());
+
+        user.setEmail(request.getEmail());
+
+        user.setIsActive(request.getIsActive());
+
+        Role role = roleRepository.findById(
+                request.getRoleId()
+        ).orElseThrow(() ->
+                new ResourceNotFoundException("Role not found"));
+
+        user.setRole(role);
+
+        // optional password update
+
+        if (request.getPassword() != null
+                && !request.getPassword().isBlank()) {
+
+            user.setPassword(
+                    passwordEncoder.encode(
+                            request.getPassword()
+                    )
+            );
+        }
+
+        userRepository.save(user);
+
+        return mapToResponse(user);
     }
 }
