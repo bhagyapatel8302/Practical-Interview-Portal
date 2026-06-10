@@ -40,6 +40,7 @@ public class JwtFilter extends OncePerRequestFilter {
             }
             if (jwtUtil.validateToken(token)) {
                 String username = jwtUtil.extractUsername(token);
+                Long userId = jwtUtil.extractUserId(token);
 
                 // Create authentication object
                 UsernamePasswordAuthenticationToken authentication =
@@ -48,7 +49,7 @@ public class JwtFilter extends OncePerRequestFilter {
                                 null,
                                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
                         );
-
+                authentication.setDetails(userId);
                 // Set authentication in Spring Security context
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }

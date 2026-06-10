@@ -27,4 +27,6 @@ public class QuestionEvaluationResult {
     private List<String> securityIssues;
 
     private String optimizedCode;
+
+    private String candidateCode;
 }

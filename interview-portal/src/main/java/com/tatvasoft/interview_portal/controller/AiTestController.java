@@ -1,7 +1,7 @@
 package com.tatvasoft.interview_portal.controller;
 
 import com.tatvasoft.interview_portal.ai.service.AiSolutionGenerationService;
-import com.tatvasoft.interview_portal.entity.ReferenceSolution;
+import com.tatvasoft.interview_portal.entity.QuestionSolution;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,7 +17,7 @@ public class AiTestController {
     }
 
     @GetMapping("/test-ai")
-    public ReferenceSolution test() {
+    public QuestionSolution test() {
 
         return aiService.generateSolution(
                 "Binary Search",

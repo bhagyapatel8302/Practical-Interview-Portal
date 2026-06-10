@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,9 +30,9 @@ public class CandidateServiceImpl implements CandidateService {
     private final QuestionsRepository questionsRepository;
     private final AssessmentQuestionRepository assessmentQuestionRepository;
     private final CandidateSolutionRepository candidateSolutionRepository;
-    private final ReferenceSolutionRepository referenceSolutionRepository;
+    private final QuestionSolutionRepository questionSolutionRepository;
 
-    public CandidateServiceImpl(CandidateRepository candidateRepository, UserRepository userRepository, SubmissionRepository submissionRepository, AssessmentRepository assessmentRepository, QuestionsRepository questionsRepository, AssessmentQuestionRepository assessmentQuestionRepository, CandidateSolutionRepository candidateSolutionRepository, ReferenceSolutionRepository referenceSolutionRepository) {
+    public CandidateServiceImpl(CandidateRepository candidateRepository, UserRepository userRepository, SubmissionRepository submissionRepository, AssessmentRepository assessmentRepository, QuestionsRepository questionsRepository, AssessmentQuestionRepository assessmentQuestionRepository, CandidateSolutionRepository candidateSolutionRepository, QuestionSolutionRepository questionSolutionRepository) {
         this.candidateRepository = candidateRepository;
         this.userRepository = userRepository;
         this.submissionRepository = submissionRepository;
@@ -38,7 +40,7 @@ public class CandidateServiceImpl implements CandidateService {
         this.questionsRepository = questionsRepository;
         this.assessmentQuestionRepository = assessmentQuestionRepository;
         this.candidateSolutionRepository = candidateSolutionRepository;
-        this.referenceSolutionRepository = referenceSolutionRepository;
+        this.questionSolutionRepository = questionSolutionRepository;
     }
 
     @Override
@@ -160,21 +162,64 @@ public class CandidateServiceImpl implements CandidateService {
 
         List<QuestionEvaluationResult> evaluations = new ArrayList<>();
 
+        int questionNumber = 1;
+
         for (CandidateSolution s : solutions) {
 
-            QuestionEvaluationResult q = new QuestionEvaluationResult();
+            QuestionEvaluationResult q =
+                    new QuestionEvaluationResult();
+
+            Question question =
+                    questionsRepository
+                            .findById(s.getQuestionId())
+                            .orElse(null);
 
             q.setQuestionId(s.getQuestionId());
 
-            q.setScore(s.getAiScore());
+            q.setQuestionNumber(questionNumber++);
 
-            q.setFeedback(s.getAiFeedback());
+            if (question != null) {
 
-            q.setTimeComplexity(s.getTimeComplexity());
+                q.setQuestionTopic(
+                        question.getTitle()
+                );
+            }
 
-            q.setSpaceComplexity(s.getSpaceComplexity());
+            q.setCandidateCode(
+                    s.getSolution()
+            );
 
-            q.setOptimizedCode(s.getOptimizedCode());
+            q.setScore(
+                    s.getAiScore()
+            );
+
+            q.setFeedback(
+                    s.getAiFeedback()
+            );
+
+            q.setTimeComplexity(
+                    s.getTimeComplexity()
+            );
+
+            q.setSpaceComplexity(
+                    s.getSpaceComplexity()
+            );
+
+            q.setOptimizedCode(
+                    s.getOptimizedCode()
+            );
+
+            q.setMissedEdgeCases(
+                    parseList(
+                            s.getMissedEdgeCases()
+                    )
+            );
+
+            q.setSecurityIssues(
+                    parseList(
+                            s.getSecurityIssues()
+                    )
+            );
 
             evaluations.add(q);
         }
@@ -189,7 +234,22 @@ public class CandidateServiceImpl implements CandidateService {
 
         return result;
     }
+    private List<String> parseList(String value) {
 
+        if (value == null || value.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return Arrays.stream(
+                        value
+                                .replace("[", "")
+                                .replace("]", "")
+                                .split(",")
+                )
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+    }
     private List<QuestionUploadDto> loadQuestions(Integer assessmentId) {
 
         List<AssessmentQuestion> links = assessmentQuestionRepository.findByAssessmentId(assessmentId);
@@ -207,13 +267,13 @@ public class CandidateServiceImpl implements CandidateService {
             dto.setQuestionTitle(question.getTitle());
 
             dto.setQuestionDescription(question.getDescription());
-            ReferenceSolution solution = referenceSolutionRepository.findByQuestionIdAndIsActiveTrue(question.getId()).orElse(null);
+            QuestionSolution solution = questionSolutionRepository.findByQuestionIdAndIsActiveTrue(question.getId()).orElse(null);
 
             if (solution != null) {
 
                 dto.setSolutionFileId(solution.getId());
 
-                dto.setSolutionFileName(solution.getFileName());
+                dto.setSolutionFileName(question.getTitle().replace(" ", ""));
             }
 
             questions.add(dto);

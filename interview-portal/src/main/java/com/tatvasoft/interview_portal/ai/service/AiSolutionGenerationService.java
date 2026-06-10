@@ -1,10 +1,10 @@
 package com.tatvasoft.interview_portal.ai.service;
 
-import com.tatvasoft.interview_portal.entity.ReferenceSolution;
+import com.tatvasoft.interview_portal.entity.QuestionSolution;
 
 public interface AiSolutionGenerationService {
 
-    ReferenceSolution generateSolution(
+    QuestionSolution generateSolution(
             String title,
             String description
     );

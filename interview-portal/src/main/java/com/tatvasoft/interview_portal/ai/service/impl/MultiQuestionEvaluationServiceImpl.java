@@ -6,11 +6,21 @@ import com.tatvasoft.interview_portal.ai.dto.MultiQuestionEvaluationResult;
 import com.tatvasoft.interview_portal.ai.dto.QuestionEvaluationResult;
 import com.tatvasoft.interview_portal.ai.service.MultiQuestionEvaluationService;
 import com.tatvasoft.interview_portal.ai.service.router.EvaluationRouter;
+import com.tatvasoft.interview_portal.entity.Assessment;
+import com.tatvasoft.interview_portal.entity.CandidateSolution;
+import com.tatvasoft.interview_portal.entity.Submission;
+import com.tatvasoft.interview_portal.enums.AssessmentStatus;
+import com.tatvasoft.interview_portal.repository.AssessmentRepository;
 import com.tatvasoft.interview_portal.repository.CandidateSolutionRepository;
 import com.tatvasoft.interview_portal.repository.QuestionsRepository;
 import com.tatvasoft.interview_portal.repository.SubmissionRepository;
+import com.tatvasoft.interview_portal.util.JwtUtil;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -22,17 +32,33 @@ public class MultiQuestionEvaluationServiceImpl implements MultiQuestionEvaluati
     private final QuestionsRepository questionsRepository;
     private final SubmissionRepository submissionRepository;
     private final CandidateSolutionRepository candidateSolutionRepository;
+    private final AssessmentRepository assessmentRepository;
 
-    public MultiQuestionEvaluationServiceImpl(EvaluationRouter evaluationRouter, QuestionsRepository questionsRepository, SubmissionRepository submissionRepository, CandidateSolutionRepository candidateSolutionRepository) {
+    public MultiQuestionEvaluationServiceImpl(EvaluationRouter evaluationRouter, QuestionsRepository questionsRepository, SubmissionRepository submissionRepository, CandidateSolutionRepository candidateSolutionRepository, AssessmentRepository assessmentRepository) {
         this.evaluationRouter = evaluationRouter;
         this.questionsRepository = questionsRepository;
         this.submissionRepository = submissionRepository;
         this.candidateSolutionRepository = candidateSolutionRepository;
+        this.assessmentRepository = assessmentRepository;
     }
 
     @Override
+    @Transactional
     public MultiQuestionEvaluationResult evaluateAll(List<FileSubmissionRequest> questions) {
+        FileSubmissionRequest firstQuestion = questions.get(0);
+        Long userId =
+                (Long) SecurityContextHolder
+                        .getContext()
+                        .getAuthentication()
+                        .getDetails();
+        Submission submission = new Submission();
+        submission.setAssessmentId(firstQuestion.getAssessmentId());
+        submission.setCandidateId(firstQuestion.getCandidateId());
+        submission.setEvaluatedAt(LocalDateTime.now());
+        submission.setCreatedAt(LocalDateTime.now());
+        submission.setCreatedBy(userId);
 
+        submission = submissionRepository.save(submission);
         ExecutorService executor = Executors.newFixedThreadPool(questions.size());
         List<Future<QuestionEvaluationResult>> futures = new ArrayList<>();
 
@@ -43,11 +69,13 @@ public class MultiQuestionEvaluationServiceImpl implements MultiQuestionEvaluati
 
             futures.add(executor.submit(() -> {
                 QuestionEvaluationResult qResult = new QuestionEvaluationResult();
+                String candidateCode = new String(request.getSubmissionFile().getBytes(), StandardCharsets.UTF_8);
                 qResult.setQuestionNumber(index + 1);
                 String questionTitle = questionsRepository.findById(request.getQuestionId()).map(q -> q.getDescription()).orElse("Unknown Question");
                 qResult.setQuestionTopic(questionTitle);
                 EvaluationResult evaluation = evaluationRouter.routeEvaluation(request);
                 qResult.setQuestionId(request.getQuestionId());
+                qResult.setCandidateCode(candidateCode);
                 qResult.setScore(evaluation.getScore());
                 qResult.setFeedback(evaluation.getFeedback());
                 qResult.setTimeComplexity(evaluation.getTimeComplexity());
@@ -63,6 +91,7 @@ public class MultiQuestionEvaluationServiceImpl implements MultiQuestionEvaluati
 
         // Collect results in original order
         List<QuestionEvaluationResult> results = new ArrayList<>();
+
         for (Future<QuestionEvaluationResult> future : futures) {
             try {
                 results.add(future.get(120, TimeUnit.SECONDS));
@@ -72,7 +101,23 @@ public class MultiQuestionEvaluationServiceImpl implements MultiQuestionEvaluati
                 results.add(buildErrorResult("Evaluation failed: " + e.getMessage(), 0));
             }
         }
+        for (QuestionEvaluationResult result : results) {
 
+            CandidateSolution solution =
+                    new CandidateSolution();
+
+            solution.setSubmissionId(submission.getId());
+            solution.setQuestionId(result.getQuestionId());
+            solution.setAiScore(result.getScore());
+            solution.setAiFeedback(result.getFeedback());
+            solution.setTimeComplexity(result.getTimeComplexity());
+            solution.setSpaceComplexity(result.getSpaceComplexity());
+            solution.setMissedEdgeCases(result.getMissedEdgeCases().toString());
+            solution.setSecurityIssues(result.getSecurityIssues().toString());
+            solution.setOptimizedCode(result.getOptimizedCode());
+            solution.setSolution(result.getCandidateCode());
+            candidateSolutionRepository.save(solution);
+        }
         double overallScore =
                 results.stream()
                         .mapToInt(
@@ -80,6 +125,19 @@ public class MultiQuestionEvaluationServiceImpl implements MultiQuestionEvaluati
                         )
                         .average()
                         .orElse(0);
+        submission.setAiScore((int) overallScore);
+
+        submissionRepository.save(submission);
+        Assessment assessment =
+                assessmentRepository.findById(
+                        firstQuestion.getAssessmentId()
+                ).orElseThrow(() -> new RuntimeException("Assessment not found"));
+
+        assessment.setStatus(AssessmentStatus.COMPLETED.toString());
+        assessment.setCompletedAt(LocalDateTime.now());
+        assessment.setUpdatedAt(LocalDateTime.now());
+        assessment.setUpdatedBy(userId);
+        assessmentRepository.save(assessment);
         MultiQuestionEvaluationResult finalResult = new MultiQuestionEvaluationResult();
         finalResult.setTotalQuestions(results.size());
         finalResult.setOverallScore(overallScore);

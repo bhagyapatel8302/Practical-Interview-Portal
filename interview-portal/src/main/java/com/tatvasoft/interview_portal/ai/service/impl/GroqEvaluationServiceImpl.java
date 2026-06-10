@@ -8,9 +8,9 @@ import com.tatvasoft.interview_portal.ai.dto.EvaluationResult;
 import com.tatvasoft.interview_portal.ai.dto.FileSubmissionRequest;
 import com.tatvasoft.interview_portal.ai.service.AiProviderService;
 import com.tatvasoft.interview_portal.entity.Question;
-import com.tatvasoft.interview_portal.entity.ReferenceSolution;
+import com.tatvasoft.interview_portal.entity.QuestionSolution;
+import com.tatvasoft.interview_portal.repository.QuestionSolutionRepository;
 import com.tatvasoft.interview_portal.repository.QuestionsRepository;
-import com.tatvasoft.interview_portal.repository.ReferenceSolutionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -37,15 +37,15 @@ public class GroqEvaluationServiceImpl implements AiProviderService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
     @Autowired
-    private ReferenceSolutionRepository
-            referenceSolutionRepository;
+    private QuestionSolutionRepository
+            questionSolutionRepository;
     @Autowired
     private QuestionsRepository questionsRepository;
     @Override
     public EvaluationResult evaluateCode(FileSubmissionRequest request) {
         try {
-            ReferenceSolution solution =
-                    referenceSolutionRepository
+            QuestionSolution solution =
+                    questionSolutionRepository
                             .findByQuestionIdAndIsActiveTrue(
                                     request.getQuestionId()
                             )
@@ -63,7 +63,7 @@ public class GroqEvaluationServiceImpl implements AiProviderService {
                                     )
                             );
             String solutionCode =
-                    solution.getCode();
+                    solution.getSolutionCode();
             String candidateCode = new String(
                     request.getSubmissionFile().getBytes(), StandardCharsets.UTF_8
             );

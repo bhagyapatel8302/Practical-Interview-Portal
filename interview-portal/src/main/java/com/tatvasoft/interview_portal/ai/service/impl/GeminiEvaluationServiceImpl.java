@@ -6,9 +6,9 @@ import com.tatvasoft.interview_portal.ai.dto.EvaluationResult;
 import com.tatvasoft.interview_portal.ai.dto.FileSubmissionRequest;
 import com.tatvasoft.interview_portal.ai.service.AiProviderService;
 import com.tatvasoft.interview_portal.entity.Question;
-import com.tatvasoft.interview_portal.entity.ReferenceSolution;
+import com.tatvasoft.interview_portal.entity.QuestionSolution;
+import com.tatvasoft.interview_portal.repository.QuestionSolutionRepository;
 import com.tatvasoft.interview_portal.repository.QuestionsRepository;
-import com.tatvasoft.interview_portal.repository.ReferenceSolutionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -32,15 +32,15 @@ public class GeminiEvaluationServiceImpl implements AiProviderService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
     @Autowired
-    private ReferenceSolutionRepository
-            referenceSolutionRepository;
+    private QuestionSolutionRepository
+            questionSolutionRepository;
     @Autowired
     private QuestionsRepository questionsRepository;
     @Override
     public EvaluationResult evaluateCode(FileSubmissionRequest request) {
         try {
-            ReferenceSolution solution =
-                    referenceSolutionRepository
+            QuestionSolution solution =
+                    questionSolutionRepository
                             .findByQuestionIdAndIsActiveTrue(
                                     request.getQuestionId()
                             )
@@ -58,7 +58,7 @@ public class GeminiEvaluationServiceImpl implements AiProviderService {
                                     )
                             );
             String solutionCode =
-                    solution.getCode();
+                    solution.getSolutionCode();
             String candidateCode = new String(
                     request.getSubmissionFile().getBytes(), StandardCharsets.UTF_8
             );
@@ -69,13 +69,17 @@ public class GeminiEvaluationServiceImpl implements AiProviderService {
                 {
                   "score": <integer between 0 and 10>,
                   "feedback": "<string: detailed overall critique>",
-                  "timeComplexity": "<string: Big-O notation>",
-                  "spaceComplexity": "<string: Big-O notation>",
+                  "timeComplexity": "<ONLY Big-O notation like O(1), O(log N), O(N), O(N log N), O(N²)>",
+                  "spaceComplexity": "<ONLY Big-O notation like O(1), O(log N), O(N), O(N log N), O(N²)>",
                   "missedEdgeCases": ["<string>", "<string>"],
                   "securityIssues": ["<string>", "<string>"],
                   "optimizedCode": "<string: the perfect production-ready Java code>"
                 }
-
+                IMPORTANT RULES:
+                - score must be an integer from 0 to 10.
+                - timeComplexity must contain ONLY the Big-O notation. No explanations.
+                - spaceComplexity must contain ONLY the Big-O notation. No explanations.
+    
                 Question Topic: %s
 
                 Reference / Existing Solution:

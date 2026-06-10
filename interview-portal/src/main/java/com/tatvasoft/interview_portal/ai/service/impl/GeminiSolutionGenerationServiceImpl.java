@@ -3,12 +3,13 @@ package com.tatvasoft.interview_portal.ai.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tatvasoft.interview_portal.ai.service.AiSolutionGenerationService;
-import com.tatvasoft.interview_portal.entity.ReferenceSolution;
+import com.tatvasoft.interview_portal.entity.QuestionSolution;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -31,11 +32,15 @@ public class GeminiSolutionGenerationServiceImpl
             new ObjectMapper();
 
     @Override
-    public ReferenceSolution generateSolution(
+    public QuestionSolution generateSolution(
             String title,
             String description
     ) {
-
+        Long userId =
+                (Long) SecurityContextHolder
+                        .getContext()
+                        .getAuthentication()
+                        .getDetails();
         try {
 
             String prompt = """
@@ -89,18 +94,13 @@ public class GeminiSolutionGenerationServiceImpl
                             .path("text")
                             .asText();
 
-            ReferenceSolution solution =
-                    new ReferenceSolution();
+            QuestionSolution solution =
+                    new QuestionSolution();
 
-            solution.setCode(generatedCode);
-
-            solution.setGeneratedByAi(true);
-
+            solution.setSolutionCode(generatedCode);
+            solution.setIsActive(true);
             solution.setCreatedAt(LocalDateTime.now());
-
-            solution.setFileName(
-                    generateFileName(title)
-            );
+            solution.setCreatedBy(userId);
 
             return solution;
 

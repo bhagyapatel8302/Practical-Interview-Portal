@@ -22,13 +22,13 @@ public class CandidateSolution {
     @Column(name = "question_id")
     private Long questionId;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "solution", columnDefinition = "TEXT")
     private String solution;
 
     @Column(name = "ai_score")
     private Integer aiScore;
 
-    @Column(name = "ai_feedback")
+    @Column(name = "ai_feedback", columnDefinition = "TEXT")
     private String aiFeedback;
 
     @Column(name = "time_complexity")
@@ -37,14 +37,13 @@ public class CandidateSolution {
     @Column(name = "space_complexity")
     private String spaceComplexity;
 
-    @Column(name = "missed_edge_cases")
+    @Column(name = "missed_edge_cases", columnDefinition = "TEXT")
     private String missedEdgeCases;
 
-    @Column(name = "security_issues")
+    @Column(name = "security_issues", columnDefinition = "TEXT")
     private String securityIssues;
 
     @Column(name = "optimized_code", columnDefinition = "TEXT")
-
     private String optimizedCode;
 
     @Column(name = "created_at")
