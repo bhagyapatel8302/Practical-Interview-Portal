@@ -16,6 +16,7 @@ public class QuestionRequest {
     private Integer estimatedTime;
     private Boolean isActive;
     private Boolean generateAiSolution;
+    private List<String> designations;
     private List<Long> categoryIds;
     private List<SolutionDto> solutions;
 }

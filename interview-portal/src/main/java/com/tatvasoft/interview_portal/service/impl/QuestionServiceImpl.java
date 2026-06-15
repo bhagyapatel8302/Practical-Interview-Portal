@@ -1,10 +1,7 @@
 package com.tatvasoft.interview_portal.service.impl;
 
 import com.tatvasoft.interview_portal.dto.*;
-import com.tatvasoft.interview_portal.entity.Category;
-import com.tatvasoft.interview_portal.entity.Question;
-import com.tatvasoft.interview_portal.entity.QuestionSolution;
-import com.tatvasoft.interview_portal.entity.User;
+import com.tatvasoft.interview_portal.entity.*;
 import com.tatvasoft.interview_portal.repository.CategoryRepository;
 import com.tatvasoft.interview_portal.repository.QuestionsRepository;
 import com.tatvasoft.interview_portal.repository.UserRepository;
@@ -56,6 +53,25 @@ public class QuestionServiceImpl implements QuestionService {
 
             // Convert the List to a Set (since your Question entity uses a Set for categories)
             q.setCategories(new java.util.HashSet<>(categories));
+        }
+
+        if (request.getDesignations() != null && !request.getDesignations().isEmpty()) {
+
+            List<QuestionDesignation> designationEntities =
+                    request.getDesignations()
+                            .stream()
+                            .map(designation -> {
+
+                                QuestionDesignation qd = new QuestionDesignation();
+
+                                qd.setDesignation(designation);
+                                qd.setQuestion(q);
+
+                                return qd;
+                            })
+                            .collect(Collectors.toList());
+
+            q.setDesignations(designationEntities);
         }
 
         if (request.getSolutions() != null && !request.getSolutions().isEmpty()) {
@@ -146,6 +162,29 @@ public class QuestionServiceImpl implements QuestionService {
             q.getSolutions().clear();
         }
 
+        if (request.getDesignations() != null && !request.getDesignations().isEmpty()) {
+
+            q.getDesignations().clear();
+
+            questionRepository.saveAndFlush(q);
+
+            List<QuestionDesignation> designationEntities =
+                    request.getDesignations()
+                            .stream()
+                            .map(designation -> {
+
+                                QuestionDesignation qd = new QuestionDesignation();
+
+                                qd.setDesignation(designation);
+                                qd.setQuestion(q);
+
+                                return qd;
+                            })
+                            .collect(Collectors.toList());
+
+            q.getDesignations().addAll(designationEntities);
+        }
+
         Question updatedQuestion = questionRepository.save(q);
 
         return mapToQuestionResponse(updatedQuestion);
@@ -229,6 +268,13 @@ public class QuestionServiceImpl implements QuestionService {
             response.setSolutions(question.getSolutions().stream()
                     .map(sol -> new SolutionDto(sol.getLanguage(), sol.getSolutionCode()))
                     .collect(Collectors.toList()));
+        }
+
+        if (question.getDesignations() != null) {
+            response.setDesignations(question.getDesignations().stream()
+                            .map(QuestionDesignation::getDesignation)
+                            .collect(Collectors.toList())
+            );
         }
 
         return response;

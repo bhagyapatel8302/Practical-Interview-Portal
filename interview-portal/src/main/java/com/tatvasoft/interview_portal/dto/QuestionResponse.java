@@ -16,7 +16,7 @@ public class QuestionResponse {
     private String difficulty;
     private Integer estimatedTime;
     private Boolean isActive;
-
+    private List<String> designations;
     private List<CategoryDto> categories;
     private List<SolutionDto> solutions;
 }

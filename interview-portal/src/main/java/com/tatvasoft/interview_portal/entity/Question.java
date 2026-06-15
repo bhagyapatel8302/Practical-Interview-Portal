@@ -3,6 +3,9 @@ package com.tatvasoft.interview_portal.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "questions")
 @Getter
@@ -32,4 +35,7 @@ public class Question {
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<QuestionSolution> solutions = new java.util.ArrayList<>();
+
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<QuestionDesignation> designations = new ArrayList<>();
 }
