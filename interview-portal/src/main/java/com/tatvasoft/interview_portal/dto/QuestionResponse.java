@@ -13,10 +13,10 @@ public class QuestionResponse {
     private Long id;
     private String title;
     private String description;
+    private List<String> designations;
     private String difficulty;
     private Integer estimatedTime;
     private Boolean isActive;
-    private List<String> designations;
     private List<CategoryDto> categories;
     private List<SolutionDto> solutions;
 }

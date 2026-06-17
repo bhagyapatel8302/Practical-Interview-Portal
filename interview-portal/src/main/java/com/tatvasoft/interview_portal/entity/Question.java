@@ -24,7 +24,13 @@ public class Question {
     private Boolean isActive;
     private Long createdBy = null;
     private Long updatedBy = null;
-
+    @OneToMany(
+            mappedBy = "question",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<QuestionDesignation> designations =
+            new ArrayList<>();
     @ManyToMany
     @JoinTable(
             name = "question_categories",
@@ -35,7 +41,4 @@ public class Question {
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<QuestionSolution> solutions = new java.util.ArrayList<>();
-
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<QuestionDesignation> designations = new ArrayList<>();
 }

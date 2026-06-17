@@ -127,4 +127,22 @@ public class QuestionController {
                 )
         );
     }
+
+    @GetMapping("/recommend")
+    public ResponseEntity<ApiResponse<List<QuestionResponse>>> recommendQuestions(
+            @RequestParam Long candidateId,
+            @RequestParam(defaultValue = "90") Integer maxMinutes) {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        true,
+                        null,
+                        questionService.recommendQuestions(
+                                candidateId,
+                                maxMinutes
+                        )
+                )
+        );
+    }
 }

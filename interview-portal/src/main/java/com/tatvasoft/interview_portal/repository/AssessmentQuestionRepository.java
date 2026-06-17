@@ -5,9 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface AssessmentQuestionRepository
-        extends JpaRepository<AssessmentQuestion, Integer> {
+public interface AssessmentQuestionRepository extends JpaRepository<AssessmentQuestion, Integer> {
 
-    List<AssessmentQuestion>
-    findByAssessmentId(Integer assessmentId);
+    List<AssessmentQuestion> findByAssessmentId(Integer assessmentId);
+
+    void deleteByAssessmentId(Integer assessmentId);
 }

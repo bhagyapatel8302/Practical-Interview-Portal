@@ -1,10 +1,9 @@
 package com.tatvasoft.interview_portal.service.impl;
 
+import com.tatvasoft.interview_portal.ai.service.QuestionSelectionService;
 import com.tatvasoft.interview_portal.dto.*;
 import com.tatvasoft.interview_portal.entity.*;
-import com.tatvasoft.interview_portal.repository.CategoryRepository;
-import com.tatvasoft.interview_portal.repository.QuestionsRepository;
-import com.tatvasoft.interview_portal.repository.UserRepository;
+import com.tatvasoft.interview_portal.repository.*;
 import com.tatvasoft.interview_portal.service.QuestionService;
 import com.tatvasoft.interview_portal.util.SecurityUtil;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,11 +22,17 @@ public class QuestionServiceImpl implements QuestionService {
     private final QuestionsRepository questionRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final CandidateRepository candidateRepository;
+    private final QuestionDesignationRepository questionDesignationRepository;
+    private final QuestionSelectionService questionSelectionService;
 
-    public QuestionServiceImpl(QuestionsRepository questionRepository, UserRepository userRepository, CategoryRepository categoryRepository) {
+    public QuestionServiceImpl(QuestionsRepository questionRepository, UserRepository userRepository, CategoryRepository categoryRepository, CandidateRepository candidateRepository, QuestionDesignationRepository questionDesignationRepository, QuestionSelectionService questionSelectionService) {
         this.questionRepository = questionRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
+        this.candidateRepository = candidateRepository;
+        this.questionDesignationRepository = questionDesignationRepository;
+        this.questionSelectionService = questionSelectionService;
     }
 
     @Override
@@ -276,6 +281,74 @@ public class QuestionServiceImpl implements QuestionService {
                             .collect(Collectors.toList())
             );
         }
+
+        return response;
+    }
+
+    @Override
+    public List<QuestionResponse> recommendQuestions(
+            Long candidateId,
+            Integer maxMinutes) {
+
+        Candidate candidate =
+                candidateRepository.findById(candidateId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Candidate not found"
+                                ));
+
+        List<Question> availableQuestions =
+                questionDesignationRepository
+                        .findQuestionsByDesignation(
+                                candidate.getDesignation()
+                        );
+
+        if (availableQuestions.isEmpty()) {
+
+            throw new RuntimeException(
+                    "No questions found for designation: "
+                            + candidate.getDesignation()
+            );
+        }
+
+        List<Long> selectedIds =
+                questionSelectionService
+                        .selectQuestions(
+                                candidate.getDesignation(),
+                                availableQuestions,
+                                maxMinutes
+                        );
+
+        return availableQuestions.stream()
+                .filter(q ->
+                        selectedIds.contains(q.getId()))
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    private QuestionResponse mapToResponse(
+            Question question) {
+        QuestionResponse response =
+                new QuestionResponse();
+
+        response.setId(question.getId());
+
+        response.setTitle(question.getTitle());
+
+        response.setDescription(question.getDescription());
+
+        response.setDifficulty(question.getDifficulty());
+
+        response.setEstimatedTime(question.getEstimatedTime());
+
+        response.setIsActive(question.getIsActive());
+
+        response.setDesignations(
+                question.getDesignations()
+                        .stream()
+                        .map(QuestionDesignation::getDesignation)
+                        .toList()
+        );
 
         return response;
     }
