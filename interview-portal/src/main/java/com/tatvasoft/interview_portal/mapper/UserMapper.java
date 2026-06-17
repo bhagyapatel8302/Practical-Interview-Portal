@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 public interface UserMapper {
 
     @Mapping(target = "password", source = "encodedPassword")
+    @Mapping(target = "role", source = "role")
     @Mapping(target = "createdBy", source = "currentUserId")
     @Mapping(target = "createdAt", expression = "java(LocalDateTime.now())")
     User toEntity(UserRequest request, String encodedPassword, Role role, Long currentUserId);

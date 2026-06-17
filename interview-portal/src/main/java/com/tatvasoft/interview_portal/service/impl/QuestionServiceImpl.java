@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -71,6 +72,7 @@ public class QuestionServiceImpl implements QuestionService {
 
                                 qd.setDesignation(designation);
                                 qd.setQuestion(q);
+                                qd.setCreatedAt(LocalDateTime.now());
 
                                 return qd;
                             })
