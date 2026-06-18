@@ -126,7 +126,11 @@ public class MultiQuestionEvaluationServiceImpl implements MultiQuestionEvaluati
                         .average()
                         .orElse(0);
         submission.setAiScore((int) overallScore);
-
+        submission.setOutput(
+                overallScore >= 7
+                        ? "PASS"
+                        : "FAIL"
+        );
         submissionRepository.save(submission);
         Assessment assessment =
                 assessmentRepository.findById(
