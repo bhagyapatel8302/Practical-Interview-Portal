@@ -3,6 +3,7 @@ package com.tatvasoft.interview_portal.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +23,15 @@ public class Question {
     private String difficulty;
     private Integer estimatedTime;
     private Boolean isActive;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
     private Long createdBy = null;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     private Long updatedBy = null;
     @OneToMany(
             mappedBy = "question",
