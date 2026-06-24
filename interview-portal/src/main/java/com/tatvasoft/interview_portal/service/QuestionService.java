@@ -22,7 +22,7 @@ public interface QuestionService {
 
     void deleteQuestion(Long id);
 
-    List<Question> uploadZip(MultipartFile file);
+    List<Question> uploadExcel(MultipartFile file);
 
     List<QuestionResponse> recommendQuestions(
             Long candidateId,

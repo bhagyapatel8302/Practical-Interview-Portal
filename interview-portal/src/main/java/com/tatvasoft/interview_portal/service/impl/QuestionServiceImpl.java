@@ -6,8 +6,10 @@ import com.tatvasoft.interview_portal.entity.*;
 import com.tatvasoft.interview_portal.repository.*;
 import com.tatvasoft.interview_portal.service.QuestionService;
 import com.tatvasoft.interview_portal.util.SecurityUtil;
+import org.apache.poi.ss.usermodel.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
@@ -26,6 +28,7 @@ public class QuestionServiceImpl implements QuestionService {
     private final CandidateRepository candidateRepository;
     private final QuestionDesignationRepository questionDesignationRepository;
     private final QuestionSelectionService questionSelectionService;
+    private final DataFormatter formatter = new DataFormatter();
 
     public QuestionServiceImpl(QuestionsRepository questionRepository, UserRepository userRepository, CategoryRepository categoryRepository, CandidateRepository candidateRepository, QuestionDesignationRepository questionDesignationRepository, QuestionSelectionService questionSelectionService) {
         this.questionRepository = questionRepository;
@@ -37,6 +40,7 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
+    @Transactional
     public QuestionResponse addQuestion(QuestionRequest request) {
 
         String username = SecurityUtil.getCurrentUsername();
@@ -102,6 +106,7 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
+    @Transactional
     public List<QuestionResponse> getAllQuestions() {
         return questionRepository.findAll()
                 .stream()
@@ -129,6 +134,7 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
+    @Transactional
     public QuestionResponse updateQuestion(Long id, QuestionRequest request) {
 
         String username = SecurityUtil.getCurrentUsername();
@@ -184,6 +190,7 @@ public class QuestionServiceImpl implements QuestionService {
 
                                 qd.setDesignation(designation);
                                 qd.setQuestion(q);
+                                qd.setCreatedAt(LocalDateTime.now());
 
                                 return qd;
                             })
@@ -192,7 +199,7 @@ public class QuestionServiceImpl implements QuestionService {
             q.getDesignations().addAll(designationEntities);
         }
 
-        Question updatedQuestion = questionRepository.save(q);
+        Question updatedQuestion = questionRepository.saveAndFlush(q);
 
         return mapToQuestionResponse(updatedQuestion);
     }
@@ -208,7 +215,8 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
-    public List<Question> uploadZip(MultipartFile file) {
+    @Transactional
+    public List<Question> uploadExcel(MultipartFile file) {
 
         String username = SecurityUtil.getCurrentUsername();
 
@@ -218,41 +226,116 @@ public class QuestionServiceImpl implements QuestionService {
 
         List<Question> uploaded = new ArrayList<>();
 
-        try (ZipInputStream zis = new ZipInputStream(file.getInputStream())) {
+        try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
 
-            ZipEntry entry;
+            Sheet sheet = workbook.getSheetAt(0);
 
-            while ((entry = zis.getNextEntry()) != null) {
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
 
-                if (!entry.isDirectory() && entry.getName().endsWith(".txt")) {
+                Row row = sheet.getRow(i);
 
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(zis));
-
-                    String title = reader.readLine();
-                    String difficulty = reader.readLine();
-                    Integer time = Integer.parseInt(reader.readLine());
-                    String description = reader.readLine();
-                    Boolean status = Boolean.parseBoolean(reader.readLine());
-
-                    Question q = new Question();
-
-                    q.setTitle(title);
-                    q.setDescription(description);
-                    q.setDifficulty(difficulty);
-                    q.setEstimatedTime(time);
-                    q.setIsActive(status);
-
-                    q.setCreatedBy(currentUser.getId());
-
-                    questionRepository.save(q);
-                    uploaded.add(q);
+                if (row == null) {
+                    continue;
                 }
+
+                Question question = new Question();
+
+                question.setTitle(getCellValue(row.getCell(0)));
+                question.setDescription(getCellValue(row.getCell(1)));
+                question.setDifficulty(getCellValue(row.getCell(2)));
+
+                question.setEstimatedTime(
+                        Integer.parseInt(getCellValue(row.getCell(3)))
+                );
+
+                question.setIsActive(
+                        Boolean.parseBoolean(getCellValue(row.getCell(4)))
+                );
+
+                question.setCreatedBy(currentUser.getId());
+
+                // Categories
+                String categoryCell = getCellValue(row.getCell(5));
+
+                if (!categoryCell.isBlank()) {
+
+                    List<Category> categories = Arrays.stream(categoryCell.split(","))
+                            .map(String::trim)
+                            .map(name ->
+                                    categoryRepository
+                                            .findByNameIgnoreCase(name)
+                                            .orElseThrow(() ->
+                                                    new RuntimeException(
+                                                            "Category not found : " + name)))
+                            .toList();
+
+                    question.setCategories(new HashSet<>(categories));
+                }
+
+                // Designations
+                String designationCell = getCellValue(row.getCell(6));
+
+                if (!designationCell.isBlank()) {
+
+                    List<QuestionDesignation> designationList =
+                            Arrays.stream(designationCell.split(","))
+                                    .map(String::trim)
+                                    .map(designation -> {
+
+                                        QuestionDesignation qd =
+                                                new QuestionDesignation();
+
+                                        qd.setDesignation(designation);
+                                        qd.setQuestion(question);
+                                        qd.setCreatedAt(LocalDateTime.now());
+
+                                        return qd;
+
+                                    }).toList();
+
+                    question.setDesignations(designationList);
+
+                }
+
+                // Java Solution
+                String javaCode = getCellValue(row.getCell(7));
+
+                if (!javaCode.isBlank()) {
+
+                    QuestionSolution solution =
+                            new QuestionSolution();
+
+                    solution.setLanguage("JAVA");
+
+                    solution.setSolutionCode(javaCode);
+
+                    solution.setQuestion(question);
+
+                    question.setSolutions(List.of(solution));
+
+                }
+                question.setCreatedBy(currentUser.getId());
+                question.setCreatedAt(LocalDateTime.now());
+
+                questionRepository.save(question);
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Error processing ZIP file");
+
+        } catch (Exception ex) {
+
+            throw new RuntimeException(ex.getMessage());
+
         }
 
         return uploaded;
+    }
+
+    private String getCellValue(Cell cell) {
+
+        if (cell == null) {
+            return "";
+        }
+
+        return formatter.formatCellValue(cell).trim();
     }
 
     private QuestionResponse mapToQuestionResponse(Question question) {

@@ -103,7 +103,7 @@ public class QuestionController {
             @RequestParam("file") MultipartFile file) {
 
         List<Question> uploadedQuestions =
-                questionService.uploadZip(file);
+                questionService.uploadExcel(file);
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
